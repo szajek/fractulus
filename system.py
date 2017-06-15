@@ -5,7 +5,6 @@ import itertools
 
 import numpy as np
 import sys
-import math
 
 from finite_difference import Delta
 
