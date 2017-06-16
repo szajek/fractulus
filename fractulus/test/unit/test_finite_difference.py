@@ -6,6 +6,10 @@ from fractulus.finite_difference import (LazyOperation, Operator, Stencil, Schem
     Delta, NodeFunction, operate, merge_weights, Coefficients, MutateMixin)
 
 
+def _are_the_same_objects(obj, mutated):
+    return obj is mutated
+
+
 class MutateMixinTest(unittest.TestCase):
 
     class PublicFieldsExample(MutateMixin):
@@ -23,44 +27,32 @@ class MutateMixinTest(unittest.TestCase):
 
             MutateMixin.__init__(self, ('field_1', '_field_1'), ('field_2', '_field_2'))
 
-    def test_Mutate_PublicField_ReturnNewObjectWithProvidedOrObjectFieldsValues(self):
+    def test_Mutate_PublicField_ReturnNewObjectWithMutatedField(self):
         obj = self.PublicFieldsExample('field_1_value', 'field_2_value')
 
         mutated = obj.mutate(field_1='new')
 
-        self.assertEqual(
-            'new',
-            mutated.field_1
-        )
+        self.assertFalse(_are_the_same_objects(obj, mutated))
+        self.assertEqual('new', mutated.field_1)
+        self.assertEqual('field_2_value', mutated.field_2)
 
-        self.assertEqual(
-            'field_2_value',
-            mutated.field_2
-        )
-
-    def test_Mutate_PrivateField_ReturnNewObjectWithProvidedOrObjectFieldsValues(self):
+    def test_Mutate_PrivateField_ReturnNewObjectWithMutatedField(self):
         obj = self.PrivateFieldsExample('field_1_value', 'field_2_value')
 
         mutated = obj.mutate(field_1='new')
 
-        self.assertEqual(
-            'new',
-            mutated._field_1
-        )
-
-        self.assertEqual(
-            'field_2_value',
-            mutated._field_2
-        )
+        self.assertFalse(_are_the_same_objects(obj, mutated))
+        self.assertEqual('new', mutated._field_1)
+        self.assertEqual('field_2_value', mutated._field_2)
 
 
 class DeltaTest(unittest.TestCase):
-    def test_Create_Always_CalculateAverageValueForGivenDeltas(self):
+    def test_Average_Always_ReturnAverageValueForInputs(self):
         d = Delta(1., 2.)
 
         self.assertEquals(1.5, d.average)
 
-    def test_MathOperations_Always_UseAverageValueAndReturnFloat(self):
+    def test_MathOperations_Always_OperateOnAverageValueAndReturnFloat(self):
         d = Delta(1., 2.)
         avg = d.average
 
@@ -72,10 +64,16 @@ class DeltaTest(unittest.TestCase):
 
 class CoefficientsTest(unittest.TestCase):
 
-    def test_ToValue_OutputProvided_ReturnNumberAsMultiplicationOfCoefficientsAndVariableValues(self):
+    def test_ToValue_Always_ReturnValueCalculatedBasedOnOutput(self):
+
+        coefficients = Coefficients({1: 1.3, 2: 2.3})
+        output = {1: 2.1, 2: 1.1}
+
+        result = coefficients.to_value(output)
+
         self.assertEqual(
             1.3 * 2.1 + 2.3 * 1.1,
-            Coefficients({1: 1.3, 2: 2.3}).to_value({1: 2.1, 2: 1.1})
+            result,
         )
 
 
@@ -99,48 +97,49 @@ class SchemeTest(unittest.TestCase):
             self._build_scheme((1., 2.))
         )
 
-    def test_Duplicate_Always_ReturnCopyOfScheme(self):
+    def test_Duplicate_Always_ReturnClone(self):
         s1 = Scheme({1: 2, 3: 1.})
-        self.assertEqual(
-            s1,
-            s1.duplicate()
-        )
-        self.assertNotEqual(
-            id(s1),
-            id(s1.duplicate())
-        )
 
-    def test_Add_None_ReturnCurrentScheme(self):
+        result = s1.duplicate()
+
+        self.assertEqual(s1, result)
+        self.assertFalse(_are_the_same_objects(s1, result))
+
+    def test_Add_None_ReturnUnchangedScheme(self):
         s1 = Scheme({1: 2, 3: 1.})
         s2 = None
-        self.assertEqual(
-            s1,
-            s1 + s2
-        )
 
-    def test_RightAdd_None_ReturnCurrentScheme(self):
+        result = s1 + s2
+
+        self.assertEqual(s1, result)
+
+    def test_RightAdd_None_ReturnUnchangedScheme(self):
         s1 = None
         s2 = Scheme({1: 2, 3: 1.})
-        self.assertEqual(
-            s2,
-            s1 + s2
-        )
 
-    def test_Add_DisjoinedSetsOfNodeIndices_MergeData(self):
+        result = s1 + s2
+
+        self.assertEqual(s2, result)
+
+    def test_Add_NoNodesSetsIntersection_MergeData(self):
         s1 = Scheme({1: 2})
         s2 = Scheme({2: 3})
-        self.assertEqual(
-            Scheme({1: 2, 2: 3}),
-            s1 + s2
-        )
 
-    def test_Add_NodeIndicesSetsWithIntersection_MergeForUniqueAndAddForIntersection(self):
+        result = s1 + s2
+
+        expected = Scheme({1: 2, 2: 3})
+
+        self.assertEqual(expected, result)
+
+    def test_Add_NodesSetsIntersection_MergeForUniqueAndAddForIntersection(self):
         s1 = Scheme({1: 2, 3: 1.})
         s2 = Scheme({2: 3, 3: 2.})
-        self.assertEqual(
-            Scheme({1: 2, 2: 3, 3: 3}),
-            s1 + s2
-        )
+
+        result = s1 + s2
+
+        expected = Scheme({1: 2, 2: 3, 3: 3})
+
+        self.assertEqual(expected, result)
 
     def test_Add_InconsistentOrder_ThrowsAttributeException(self):
 
@@ -150,45 +149,137 @@ class SchemeTest(unittest.TestCase):
         with self.assertRaises(AttributeError):
             s1 + s2
 
-    def test_Shift_Number_ShiftNodeAddressesByGivenNumber(self):
-        self.assertEquals(
-            Scheme({-1: 1., 2.: -3}),
-            Scheme({0: 1., 3.: -3}).shift(-1.)
-        )
+    def test_Shift_Always_ShiftNodeAddresses(self):
 
-    def test_LeftMultiplication_IntegerOrFloat_MultDataElementsByGivenValue(self):
-        self.assertEqual(self._build_scheme((0., 4., 6.)), 2 * self._build_scheme((0., 2., 3.)))
+        scheme = Scheme({0: 1., 3.: -3})
 
-    def test_RightMultiplication_IntegerOrFloat_MultDataElementsByGivenValue(self):
-        self.assertEqual(self._build_scheme((0., 4., 6.)), self._build_scheme((0., 2., 3.)) * 2.)
+        result = scheme.shift(-1.)
 
-    def test_ToCoefficients_Always_ReturnCoeffsDictConsideringGivenDeltaAndSchemeOrder(self):
+        expected = Scheme({-1: 1., 2.: -3})
 
-        self.assertEquals({1: 0.5}, Scheme({1: 1}, 1).to_coefficients(2.))
-        self.assertEquals({1: 0.25}, Scheme({1: 1}, 2).to_coefficients(2.))
+        self.assertEquals(result, expected)
 
-    def test_ToCoefficients_WeightsBetweenNodes_SpreadWeightsAroundTheClosestNodes(self):
-        self.assertEquals({0: 0.5, 1: 0.5}, Scheme({0.5: 1}).to_coefficients(1.))
-        self.assertEquals({0: 0.5, -1: 0.5}, Scheme({-0.5: 1}).to_coefficients(1.))
-        self.assertEquals({0: 0.75, -1: 0.25}, Scheme({-0.25: 1.}).to_coefficients(1.))
-        self.assertEquals({0: 0.25, 1: 0.75}, Scheme({0.75: 1}).to_coefficients(1.))
+    def test_LeftMultiplication_IntegerOrFloat_MultiplyWeights(self):
 
-    def _build_scheme(self, data, order=1.):
+        scheme = self._build_scheme(weights=(0., 2., 3.))
+
+        result = 2.*scheme
+
+        expected = self._build_scheme(weights=(0., 4., 6.))
+
+        self.assertEqual(expected, result)
+
+    def test_RightMultiplication_IntegerOrFloat_MultiplyWeights(self):
+
+        scheme = self._build_scheme(weights=(0., 2., 3.))
+
+        result = scheme*2.
+
+        expected = self._build_scheme(weights=(0., 4., 6.))
+
+        self.assertEqual(expected, result)
+
+    def test_ToCoefficients_Always_ReturnWeightsConsideringDeltaAndOrder(self):
+
+        order = 2.
+        weight = 1.
+        delta = 2.
+        scheme = Scheme({1: weight}, order)
+
+        result = scheme.to_coefficients(delta)
+
+        expected = {1: weight/delta**order}
+
+        self.assertEquals(expected, result)
+
+    def test_ToCoefficients_PositiveMidNode_SpreadEquallyWeightsToAdjacentNodes(self):
+
+        scheme = Scheme({0.5: 1})
+
+        result = scheme.to_coefficients(1.)
+
+        expected = {0: 0.5, 1: 0.5}
+
+        self.assertEquals(expected, result)
+
+    def test_ToCoefficients_NegativeMidNode_SpreadEquallyWeightsToAdjacentNodes(self):
+
+        scheme = Scheme({-0.5: 1})
+
+        result = scheme.to_coefficients(1.)
+
+        expected = {0: 0.5, -1: 0.5}
+
+        self.assertEquals(expected, result)
+
+    def test_ToCoefficients_NegativeFloatNodeAddress_SpreadProportionallyWeightsToAdjacentNodes(self):
+
+        scheme = Scheme({-0.25: 1.})
+
+        result = scheme.to_coefficients(1.)
+
+        expected = {0: 0.75, -1: 0.25}
+
+        self.assertEquals(expected, result)
+
+    def test_ToCoefficients_PositiveFloatNodeAddress_SpreadProportionallyWeightsToAdjacentNodes(self):
+        scheme = Scheme({0.75: 1})
+
+        result = scheme.to_coefficients(1.)
+
+        expected = {0: 0.25, 1: 0.75}
+
+        self.assertEquals(expected, result)
+
+    def _build_scheme(self, weights, order=1.):
         return Scheme(
-            {i: d for i, d in enumerate(data)},
+            {i: d for i, d in enumerate(weights)},
             order
         )
 
 
 class MergeWeightsTest(unittest.TestCase):
-    def test_Call_Disjoined_ReturnDictWithElementsFromBoth(self):
-        self.assertEqual(merge_weights({1: 1}, {2: 2}), {1: 1, 2: 2})
+    def test_Call_NoIntersection_ReturnDictWithElementsFromBoth(self):
 
-    def test_Call_SharedNodesAddresses_ReturnDictWithElementsFromBothAndSummedWeightsForSharedAddresses(self):
-        self.assertEqual(merge_weights({1: 1, 3: 1}, {2: 2, 3: 2}), {1: 1, 2: 2, 3: 3})
+        weights_1 = {1: 1}
+        weights_2 = {2: 2}
 
-    def test_Call_ManyGiven_ReturnMergedElementsFromAllGiven(self):
-        self.assertEqual(merge_weights({1: 1}, {2: 2}, {3: 3}), {1: 1, 2: 2, 3: 3})
+        result = merge_weights(weights_1, weights_2)
+
+        expected = {1: 1, 2: 2}
+
+        self.assertEqual(expected, result)
+
+    def test_Call_TheSameNodeAddresses_ReturnDictWitSummedValues(self):
+        weights_1 = {1: 1}
+        weights_2 = {1: 2}
+
+        result = merge_weights(weights_1, weights_2)
+
+        expected = {1: 3}
+
+        self.assertEqual(expected, result)
+
+    def test_Call_Intersection_ReturnDictWithElementsFromBothAndSummedWeightsForSharedAddresses(self):
+        weights_1 = {1: 1, 3: 1}
+        weights_2 = {2: 2, 3: 2}
+
+        result = merge_weights(weights_1, weights_2)
+
+        expected = {1: 1, 2: 2, 3: 3}
+
+        self.assertEqual(expected, result)
+
+    def test_Call_ManyGiven_ReturnMerged(self):
+        weights_1 = {1: 1}
+        weights_2 = {2: 2}
+        weights_3 = {3: 3}
+
+        result = merge_weights(weights_1, weights_2, weights_3)
+
+        expected = {1: 1, 2: 2, 3: 3}
+
+        self.assertEqual(expected, result)
 
 
 class OperateTest(unittest.TestCase):
@@ -209,7 +300,7 @@ class OperateTest(unittest.TestCase):
         with self.assertRaises(AttributeError):
             operate(scheme, Stencil({}))
 
-    def test_Call_WithScheme_ReturnSchemeWithWeightsReplacesByGivenScheme(self):
+    def test_Call_OneNodeScheme_ReturnRevolvedScheme(self):
         scheme = Scheme({1: 2})
 
         element = MagicMock(
@@ -218,7 +309,9 @@ class OperateTest(unittest.TestCase):
 
         result = operate(scheme, element)
 
-        self.assertEqual(Scheme({0: 1. * 2., 5.: 2. * 2.}, order=2.), result)
+        expected = Scheme({0: 1. * 2., 5.: 2. * 2.}, order=2.)
+
+        self.assertEqual(expected, result)
 
     def test_Call_WithFractionalScheme_ReturnSchemeWithSummedOrders(self):
         scheme = Scheme({1: 1}, order=1.2)
@@ -227,7 +320,9 @@ class OperateTest(unittest.TestCase):
 
         scheme = operate(scheme, element)
 
-        self.assertAlmostEqual(3.4, scheme.order)
+        expected = 3.4
+
+        self.assertAlmostEqual(expected, scheme.order)
 
     def test_Call_WithSchemeVariedByNodeAddress_ReturnRevolvedScheme(self):
         scheme = Scheme({1: 2, 2: 4})
@@ -241,18 +336,23 @@ class OperateTest(unittest.TestCase):
 
         result = operate(scheme, element)
 
-        self.assertEqual(Scheme({0: 1.*2 + 1.*4., 5.: 2.*4., 6: 3. * 2.}, order=2.), result)
+        expected = Scheme({0: 1. * 2 + 1. * 4., 5.: 2. * 4., 6: 3. * 2.}, order=2.)
 
-    def test_Call_WithNumber_ReturnSchemeOfSchemeOrder(self):
+        self.assertEqual(expected, result)
+
+    def test_Call_WithNumber_ReturnSchemeOfUnchangedOrder(self):
 
         scheme_order = 1.2
         scheme = Scheme({1: 1}, order=scheme_order)
 
         element = Number(0)
 
-        scheme = operate(scheme, element)
+        revolved_scheme = operate(scheme, element)
+        result = revolved_scheme.order
 
-        self.assertAlmostEqual(scheme_order, scheme.order)
+        expected = scheme_order
+
+        self.assertAlmostEqual(expected, result)
 
 #
 
@@ -262,105 +362,98 @@ class ElementTest(unittest.TestCase):
         def expand(self):
             return Scheme({1: 1})
 
-    def test_Adding_TwoElements_ReturnLazyOperationWithElements(self):
+    def test_Add_TwoElements_ReturnLazySummation(self):
         e1 = self.ConcreteElement()
         e2 = self.ConcreteElement()
 
         result = e1 + e2
 
-        self.assertEquals(
-            LazyOperation.summation(e1, e2),
-            result
-        )
+        expected = LazyOperation.summation(e1, e2)
 
-    def test_Multiplicatin_TwoElements_ReturnLazyOperationWithElements(self):
+        self.assertEquals(expected, result)
+
+    def test_Multiplication_TwoElements_ReturnLazyMultiplication(self):
         e1 = self.ConcreteElement()
         e2 = self.ConcreteElement()
 
         result = e1 * e2
 
-        self.assertEquals(
-            LazyOperation.multiplication(e1, e2),
-            result
-        )
+        expected = LazyOperation.multiplication(e1, e2)
 
-    def test_Subtraction_TwoElements_ReturnLazyOperationWithElements(self):
+        self.assertEquals(expected, result)
+
+    def test_Subtraction_TwoElements_ReturnLazySubtraction(self):
         e1 = self.ConcreteElement()
         e2 = self.ConcreteElement()
 
         result = e1 - e2
 
-        self.assertEquals(
-            LazyOperation.subtraction(e1, e2),
-            result
-        )
+        expected = LazyOperation.subtraction(e1, e2)
 
-    def test_Division_TwoElements_ReturnLazyOperationWithElements(self):
+        self.assertEquals(expected, result)
+
+    def test_Division_TwoElements_ReturnLazyDivision(self):
         e1 = self.ConcreteElement()
         e2 = self.ConcreteElement()
 
         result = e1 / e2
 
-        self.assertEquals(
-            LazyOperation.division(e1, e2),
-            result
-        )
+        expected = LazyOperation.division(e1, e2)
+
+        self.assertEquals(expected, result)
 
 
 class StencilTest(unittest.TestCase):
     def test_Create_NoAxesProvided_AssignAxisOneByDefault(self):
-        a = Stencil(1.)
+        stencil = Stencil(1.)
         self.assertEqual(
             1,
-            a._axis
+            stencil._axis
         )
 
     def test_Expand_OrderDifferentThanOne_CreateSchemeWithGivenOrder(self):
 
-        s = Stencil({}, order=1.2)
-        self.assertEqual(
-            1.2,
-            s.expand(0.)._order,
-        )
+        stencil_order = 1.2
+        s = Stencil({}, order=stencil_order)
+
+        expanded = s.expand(0.)
+        order = expanded._order
+
+        self.assertEqual(stencil_order, order)
 
     def test_Uniform_Always_GenerateUniformlyDistributedNodesInGivenLimits(self):
         left_range, right_range = 1., 2.
         resolution = 3.
 
-        def weights_provider(i, stencil_node_address):
-            return stencil_node_address
+        _stencil = Stencil.uniform(left_range, right_range, resolution, lambda *args: None)
+        result = set(_stencil._weights.keys())
 
-        s = Stencil.uniform(left_range, right_range, resolution, weights_provider)
+        _left_limit = -left_range
+        _delta = (right_range + left_range) / resolution
+        expected_node_addresses = set([_left_limit + _delta * i for i in range(4)])
 
-        _range = right_range + left_range
-        delta = _range/resolution
-        left_limit = -left_range
-        expected_node_1 = left_limit
-        expected_node_2 = left_limit + delta * 1.
-        expected_node_3 = left_limit + delta * 2.
-        expected_node_4 = left_limit + delta * 3.
+        self.assertEquals(expected_node_addresses, result)
 
-        self.assertEquals(
-            {
-                expected_node_1: expected_node_1,
-                expected_node_2: expected_node_2,
-                expected_node_3: expected_node_3,
-                expected_node_4: expected_node_4,
-            },
-            s._weights
-        )
+    def test_Central_RangeOne_GenerateWeightsEqualOneAssignedToAdjacentMidnodes(self):
 
-    def test_Central_RangeOne_GenerateWeightsForMidnodes(self):
-        self.assertTrue(self._compare_dict(
-            Stencil({-0.5: -1., 0.5: 1.})._weights,
-            Stencil.central(1.)._weights,
-        ))
+        _scheme = Stencil.central(1.)
+        result = _scheme._weights
 
-    def test_Central_RangeTwo_GenerateWeightsInNodeDividedByTwo(self):
-        self.assertTrue(self._compare_dict(
-            Stencil({-1.: -0.5, 1.: 0.5})._weights,
-            Stencil.central(2.)._weights,
-        ))
+        _scheme = Stencil({-0.5: -1., 0.5: 1.})
+        expected = _scheme._weights
+
+        self.assertTrue(self._compare_dict(expected, result))
+
+    def test_Central_RangeTwo_GenerateWeightsEqualHalfAssignedToAdjacentNodes(self):
+
+        _scheme = Stencil.central(2.)
+        result = _scheme._weights
+
+        _scheme = Stencil({-1.: -0.5, 1.: 0.5})
+        expected = _scheme._weights
+
+        self.assertTrue(self._compare_dict(expected, result,))
+
     def _compare_dict(self, d1, d2, tol=1e-4):
         return len(d1) == len(d2) and all(math.fabs(d1[k] - d2[k]) < tol for k in d1.keys())
 
@@ -437,9 +530,17 @@ class LazyOperationTest(unittest.TestCase):
 
 class OperatorTest(unittest.TestCase):
 
-    def test_Expand_SingleOperator_ReturnCoeffsWithNodesNumbersMovedByGivenValue(self):
-        s = Operator(Stencil.central())
-        self.assertEqual(Scheme({-3: -0.5, -1: 0.5}), s.expand(-2))
+    def test_Expand_NoElement_ReturnStencilSchemeShiftedToNodeAddress(self):
+
+        stencil_weights = {-1: 1., 1: 1.}
+        stencil = Stencil(stencil_weights)
+        operator = Operator(stencil, element=None)
+
+        result = operator.expand(-2)
+
+        expected = Scheme(stencil_weights).shift(-2)
+
+        self.assertEqual(expected, result)
 
     def _build_operator(self, *data):
         return Operator(
@@ -449,51 +550,83 @@ class OperatorTest(unittest.TestCase):
 
 class NumberTest(unittest.TestCase):
     def test_Expand_Float_ReturnFloat(self):
-        self.assertEquals(3, Number(3).expand(1))
 
-    def test_Expand_Callable_ReturnGivenValue(self):
-        _callable = lambda node_address: node_address * 2
-        self.assertEquals(1. * 2., Number(_callable).expand(1))
+        value = 3.
+        number = Number(value)
+
+        result = number.expand(1)
+
+        expected = value
+
+        self.assertEquals(expected, result)
+
+    def test_Expand_Callable_ReturnValueComputedByCallable(self):
+
+        value = 999.
+        number = Number(lambda node_address: value)
+
+        result = number.expand(1)
+
+        expected = value
+
+        self.assertEquals(expected, result)
 
 
 class NodeFunctionTest(unittest.TestCase):
-    def test_Get_ExactNode_ReturnValueForNode(self):
+    def test_Get_IntegerNodeAddress_ReturnValueForNode(self):
+
+        _node_address = 2.
+
         def value_in_node(node):
             return node
 
-        nf = NodeFunction(value_in_node)
+        _function = NodeFunction(value_in_node)
 
-        self.assertEqual(
-            2.,
-            nf.get(2.)
-        )
+        result = _function.get(_node_address)
 
-    def test_Get_BetweenNodesInterpolatorProvided_ReturnInterpolatedValue(self):
-        def value_in_node(node):
-            return 2.**node
+        expected = _node_address
 
-        def interpolator(x, x1, x2, v1, v2):
-            return 3.33
-
-        nf = NodeFunction(value_in_node, interpolator)
-
-        self.assertEqual(
-            3.33,
-            nf.get(2.2)
-        )
+        self.assertEqual(expected, result)
 
     @patch('fractulus.logger.solver')
-    def test_Get_BetweenNodesInterpolatorNodProvided_ReturnValueForClosestNode(self, solver_logger):
+    def test_Get_FloatNodeAddressCloserToLeftNode_ReturnValueForLeftNode(self, solver_logger):
+
         def value_in_node(node):
-            return 2.**node
+            return node
 
-        nf = NodeFunction(value_in_node)
+        _function = NodeFunction(value_in_node)
 
-        self.assertEqual(
-            2**2,
-            nf.get(2.2)
-        )
-        self.assertEqual(
-            2**3,
-            nf.get(2.6)
-        )
+        result = _function.get(2.2)
+
+        expected = 2
+
+        self.assertEqual(expected, result)
+
+    @patch('fractulus.logger.solver')
+    def test_Get_FloatNodeAddressCloserToRightNode_ReturnValueForRightNode(self, solver_logger):
+        def value_in_node(node):
+            return node
+
+        _function = NodeFunction(value_in_node)
+
+        result = _function.get(2.6)
+
+        expected = 3
+
+        self.assertEqual(expected, result)
+
+    def test_Get_FloatNodeAddressAndInterpolator_ReturnInterpolatedValue(self):
+
+        def value_in_node(node):
+            return node
+
+        def interpolator(x, x1, x2, v1, v2):
+            return v1 + (v2 - v1)*(x - x1)/(x2 - x1)
+
+        _function = NodeFunction(value_in_node, interpolator)
+
+        result = _function.get(2.2)
+
+        expected = interpolator(0.2, 1., 2., 1., 2.)
+
+        self.assertAlmostEqual(expected, result)
