@@ -1,9 +1,7 @@
-import abc
 import collections
-
 import math
 
-from finite_difference import Scheme, Element, Operator, LazyOperation, Stencil, Number
+from .finite_difference import Operator, Stencil, Number
 
 
 __all__ = ['create_fractional_deformation_operator', 'CaputoSettings']

@@ -1,10 +1,9 @@
-import unittest
-
 import math
+import unittest
 from mock import MagicMock, patch
 
-from finite_difference import LazyOperation, Operator, Stencil, Scheme, Number, Element, \
-    Delta, NodeFunction, operate, merge_weights, Coefficients, MutateMixin
+from fractulus.finite_difference import (LazyOperation, Operator, Stencil, Scheme, Number, Element, \
+    Delta, NodeFunction, operate, merge_weights, Coefficients, MutateMixin)
 
 
 class MutateMixinTest(unittest.TestCase):
@@ -483,7 +482,7 @@ class NodeFunctionTest(unittest.TestCase):
             nf.get(2.2)
         )
 
-    @patch('logger.solver')
+    @patch('fractulus.logger.solver')
     def test_Get_BetweenNodesInterpolatorNodProvided_ReturnValueForClosestNode(self, solver_logger):
         def value_in_node(node):
             return 2.**node

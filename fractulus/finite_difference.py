@@ -1,14 +1,10 @@
 import abc
 import collections
 import enum
-import math
-import numbers
-
-import logger
 import functools
+import math
 
 import dicttools
-
 
 __all__ = ['Scheme', 'Element', 'Stencil', 'LazyOperation', 'Operator', 'Number', 'NodeFunction',
            'LinearEquationTemplate', 'Delta']
@@ -430,6 +426,7 @@ class NodeFunction:
 
     def _interpolate(self, int_node_number, node_address):
         if self._interpolator is None:
+            from fractulus import logger
             logger.solver.debug('NodeFunction: node address {addr} is provided but interpolator is not defined'.format(addr=node_address))
             return self._callable(int(round(node_address)))
         else:

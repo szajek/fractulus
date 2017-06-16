@@ -2,12 +2,11 @@ import sys
 import unittest
 
 import numpy as np
-
-from domain import Grid1DBuilder
-from finite_difference import Operator, Stencil, Number, LinearEquationTemplate, NodeFunction
-from fractional_difference import CaputoSettings, create_fractional_deformation_operator
-from model import BoundaryCondition, Model
-from system import solve, VirtualValueStrategy
+from fractulus.domain import Grid1DBuilder
+from fractulus.finite_difference import Operator, Stencil, Number, LinearEquationTemplate, NodeFunction
+from fractulus.fractional_difference import CaputoSettings, create_fractional_deformation_operator
+from fractulus.model import BoundaryCondition, Model
+from fractulus.system import solve
 
 
 def _create_domain(length, node_number):

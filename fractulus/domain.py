@@ -1,8 +1,7 @@
-import collections
 from operator import is_not
 from functools import partial
 
-from geometry import Point, Vector
+from .geometry import Point, Vector
 
 
 __all__ = ['Node', 'Connection', 'Grid', 'Grid1DBuilder', ]

@@ -1,7 +1,7 @@
 import unittest
-from mock import MagicMock
 
-from domain import Grid1DBuilder, Grid, Node, Connection
+from fractulus.domain import Grid1DBuilder, Grid, Node, Connection
+from mock import MagicMock
 
 
 class NodeTest(unittest.TestCase):

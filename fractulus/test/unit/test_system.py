@@ -1,9 +1,9 @@
 import unittest
-from mock import MagicMock, patch
-
-from finite_difference import Scheme, LinearEquationTemplate
 import numpy as np
-from system import LinearEquation,  model_to_equations, VirtualNode, EquationWriter, VirtualNodeWriter, solve, \
+from mock import MagicMock
+
+from fractulus.finite_difference import Scheme, LinearEquationTemplate
+from fractulus.system import LinearEquation,  model_to_equations, VirtualNode, EquationWriter, VirtualNodeWriter, \
     extract_virtual_nodes, Output, VirtualValueStrategy
 
 

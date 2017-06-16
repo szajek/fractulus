@@ -1,6 +1,6 @@
 import unittest
 
-from finite_difference import Operator, Stencil, Number, Scheme, LazyOperation
+from fractulus.finite_difference import Operator, Stencil, Number, Scheme, LazyOperation
 
 
 class OperatorTest(unittest.TestCase):

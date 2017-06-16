@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 import sys
 
-from finite_difference import Delta
+from .finite_difference import Delta
 
 __all__ = ['LinearEquation', 'solve', 'VirtualValueStrategy']
 

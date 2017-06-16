@@ -1,6 +1,6 @@
 import unittest
 
-from geometry import Point, Vector
+from fractulus.geometry import Point, Vector
 
 
 class PointTest(unittest.TestCase):
