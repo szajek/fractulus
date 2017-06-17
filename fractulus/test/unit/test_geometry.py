@@ -1,6 +1,6 @@
 import unittest
 
-from fractulus.geometry import Point, Vector, calculate_boundary_box, calculate_dimensions
+from fractulus.geometry import Point, Vector, calculate_extreme_coordinates, BoundaryBox
 
 
 class PointTest(unittest.TestCase):
@@ -34,11 +34,11 @@ class VectorTest(unittest.TestCase):
             self.assertEqual(nodes[i], point)
 
 
-class CalculateBoundaryBoxTest(unittest.TestCase):
+class CalculateExtremeCoordinatesTest(unittest.TestCase):
     def test_Call_OnlyXCoordinate_ReturnListsOfExtremesOrNoneInAllDirections(self):
         nodes = [Point(1.), Point(2.), Point(3.)]
 
-        result = calculate_boundary_box(nodes)
+        result = calculate_extreme_coordinates(nodes)
 
         expected = (
            (nodes[0].x, None, None),
@@ -48,15 +48,33 @@ class CalculateBoundaryBoxTest(unittest.TestCase):
         self.assertEqual(expected, result)
 
 
-class CalculateDimensionsTest(unittest.TestCase):
-    def test_Call_OnlyXCoordinate_ReturnXRangeAndNoneForYAndZ(self):
-        nodes = [
-            [-2., None, None],
-            [2., None, None]
-        ]
+class BoundaryBoxTest(unittest.TestCase):
+    def test_Dimensions_OnlyXCoordinate_ReturnXRangeAndNoneForYAndZ(self):
+        points = [Point(-1.), Point(5.)]
+        bbox = BoundaryBox.from_points(points)
 
-        result = calculate_dimensions(nodes)
+        result = bbox.dimensions
 
-        expected = (4., None, None)
+        expected = (6., None, None)
+
+        self.assertEqual(expected, result)
+
+    def test_Directions_OnlyX_ReturnListWithIndexZero(self):
+        points = [Point(-1.)]
+        bbox = BoundaryBox.from_points(points)
+
+        result = bbox.directions
+
+        expected = [0]
+
+        self.assertEqual(expected, result)
+
+    def test_Directions_XYZ_ReturnListWithThreeIndices(self):
+        points = [Point(-1., 3., 3.)]
+        bbox = BoundaryBox.from_points(points)
+
+        result = bbox.directions
+
+        expected = [0, 1, 2]
 
         self.assertEqual(expected, result)

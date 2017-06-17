@@ -35,17 +35,6 @@ class GridTest(unittest.TestCase):
 
         self.assertEquals(expected, result)
 
-    def test_Dimensions_OnlyXCoordinate_ReturnXRangeAndNoneForTheYAndZ(self):
-
-        connections, grid = self._create_3node_grid()
-
-        result = grid.get_dimensions()
-
-        start_node, end_node = grid.nodes[0], grid.nodes[-1]
-        expected = (end_node.x - start_node.x, None, None)
-
-        self.assertEquals(expected, result)
-
     def test_GetByAddress_Exists_ReturnNode(self):
         grid = Grid(
             nodes=[

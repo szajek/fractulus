@@ -77,7 +77,7 @@ def _build_fractional_operator(E, A, settings):
 
 def _solve_for_classical(analysis_type, domain, bc_type, load_function_coefficients, cross_section=1.):
     node_number = len(domain.nodes)
-    length = domain.get_dimensions()[0]
+    length = domain.boundary_box.dimensions[0]
     a, b = load_function_coefficients
     result = solve(
         analysis_type,
@@ -144,7 +144,7 @@ class TrussStaticEquationFiniteDifferencesTest(unittest.TestCase):
 def _solve_for_fractional(analysis_type, domain, bc_type, settings, load_function_coefficients, cross_section=1.):
     a, b = load_function_coefficients
     node_number = len(domain.nodes)
-    length = domain.get_dimensions()[0]
+    length = domain.boundary_box.dimensions[0]
     return solve(
         analysis_type,
         Model(

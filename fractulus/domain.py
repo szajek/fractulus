@@ -1,9 +1,8 @@
+from functools import partial
 from functools import reduce
 from operator import is_not
-from functools import partial
 
-from .geometry import Point, Vector, calculate_boundary_box, calculate_dimensions
-
+from .geometry import Point, Vector, BoundaryBox
 
 __all__ = ['Node', 'Connection', 'Grid', 'Grid1DBuilder', ]
 
@@ -44,12 +43,9 @@ class Grid:
     def get_by_address(self, address):
         return self.nodes[int(address)]
 
-    def calculate_boundary_box(self):
-        return calculate_boundary_box(self.nodes)
-
-    def get_dimensions(self):
-        bbox = self.calculate_boundary_box()
-        return calculate_dimensions(bbox)
+    @property
+    def boundary_box(self):
+        return BoundaryBox.from_points(self.nodes)
 
 
 class Grid1DBuilder:

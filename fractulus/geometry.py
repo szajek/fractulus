@@ -27,13 +27,36 @@ class Vector:
         return [self.start, self.end].__iter__()
 
 
-def calculate_boundary_box(nodes):
+class BoundaryBox:
+    def __init__(self, _min, _max):
+        self.min = _min
+        self.max = _max
+
+    @property
+    def dimensions(self):
+        used = self.directions
+        return tuple(map(lambda i: self._calculate_dimension(i) if i in used else None, range(len(self.min))))
+
+    @property
+    def directions(self):
+        return [i for i, (_min, _max) in enumerate(zip(self.min, self.max)) if None not in [_min, _max]]
+
+    def _calculate_dimension(self, direction):
+        return self.max[direction] - self.min[direction]
+
+    @classmethod
+    def from_points(cls, points):
+        _min, _max = calculate_extreme_coordinates(points)
+        return cls(_min, _max)
+
+
+def calculate_extreme_coordinates(points):
 
     def extreme_or_nones(coordinates):
         return [None, None] if None in coordinates else (min(coordinates), max(coordinates))
 
     def extract_coordinates(extractor):
-        return [extractor(node) for node in nodes]
+        return [extractor(node) for node in points]
 
     def create_extractor(coord_name):
         return lambda node: getattr(node, coord_name)
@@ -47,10 +70,3 @@ def calculate_boundary_box(nodes):
             ) for coord_name in ['x', 'y', 'z']
             ])
     )
-
-
-def calculate_dimensions(bbox):
-    def calculate_dimension(_min, _max):
-        return None if None in [_min, _max] else _max - _min
-
-    return tuple(map(calculate_dimension, *bbox))
