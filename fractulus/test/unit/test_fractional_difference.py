@@ -2,8 +2,8 @@ import math
 import unittest
 
 from fractulus.finite_difference import Scheme
-from fractulus.fractional_difference import CaputoSettings, create_right_caputo_stencil, create_left_caputo_stencil, \
-    create_riesz_caputo_stencil
+from fractulus.fractional_difference import (CaputoSettings, create_right_caputo_stencil, create_left_caputo_stencil, \
+    create_riesz_caputo_stencil)
 
 
 class CaputoStencilTest(unittest.TestCase):
@@ -12,7 +12,8 @@ class CaputoStencilTest(unittest.TestCase):
         settings = CaputoSettings(alpha=0.5, lf=0.6, resolution=4)
         alpha = settings.alpha
 
-        op = create_left_caputo_stencil(settings)
+        _operator = create_left_caputo_stencil(settings)
+        results = _operator._weights
 
         expected = self._calc_expected_weights(
             settings,
@@ -24,17 +25,15 @@ class CaputoStencilTest(unittest.TestCase):
             lambda n: 1.,
         )
 
-        self.assertEqual(
-            expected,
-            op._weights,
-        )
+        self.assertEqual(expected, results,)
 
     def test_RightSide_Always_ReturnStencilWithCorrectWeights(self):
 
         settings = CaputoSettings(alpha=0.5, lf=0.6, resolution=4)
         alpha = settings.alpha
 
-        op = create_right_caputo_stencil(settings)
+        _operator = create_right_caputo_stencil(settings)
+        results = _operator._weights
 
         expected = self._calc_expected_weights(
             settings,
@@ -46,26 +45,19 @@ class CaputoStencilTest(unittest.TestCase):
             lambda n: (-1.)**n
         )
 
-        self.assertEqual(
-            expected,
-            op._weights,
-        )
+        self.assertEqual(expected, results)
 
-    def test_Expand_AlphaAlmostOne_ReturnOnlyOneWeightForGivenNodaAddress(self):
+    def test_Expand_AlphaAlmostOne_ReturnOnlyOneWeightForGivenNodeAddress(self):
         alpha = 0.999999
         lf = 1.
         resolution = 1
+        _settings = CaputoSettings(alpha, lf, resolution)
 
-        settings = CaputoSettings(alpha, lf, resolution)
-        stencil = create_riesz_caputo_stencil(settings)
+        _stencil = create_riesz_caputo_stencil(_settings)
+        result = _stencil.expand(0.)._weights
 
-        scheme = stencil.expand(0.)
-
-        expected = Scheme({0: 1})
-
-        tol = 1e-4
-        self.assertTrue(all(math.fabs(value - expected._weights[address]) < tol for address, value in scheme if
-                            math.fabs(value) > tol))
+        self.assertAlmostEqual(1., result[0], places=5)
+        self.assertEqual(1., sum(result.values()))
 
     @staticmethod
     def _calc_expected_weights(settings, left_limit, right_limit, u_0_weight_provider, u_p_weight_provider,

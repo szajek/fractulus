@@ -5,19 +5,18 @@ from fractulus.finite_difference import Operator, Stencil, Number, Scheme, LazyO
 
 class OperatorTest(unittest.TestCase):
     def test_FirstOrder_CentralDiffForNodeZero_GenerateProperCoefficients(self):
-        value = 2.
+        value = 3.
 
         linear_operator = Operator(
             Stencil.central(),
             Number(value)
         )
 
-        scheme = linear_operator.expand(0)
+        result = linear_operator.expand(0)
 
-        self.assertEqual(
-            Scheme({-1: -0.5, 1: 0.5}) * 2,
-            scheme,
-        )
+        expected = Scheme({-1: -0.5, 1: 0.5}) * value
+
+        self.assertEqual(expected, result)
 
     def test_FirstOrder_CentralDiffForNodeThree_GenerateProperCoefficients(self):
         value = 2.
@@ -27,15 +26,14 @@ class OperatorTest(unittest.TestCase):
             Number(value)
         )
 
-        scheme = linear_operator.expand(3)
+        result = linear_operator.expand(3)
 
-        self.assertEqual(
-            Scheme({2: -0.5, 4: 0.5}) * 2,
-            scheme,
-        )
+        expected = Scheme({2: -0.5, 4: 0.5}) * value
+
+        self.assertEqual(expected, result)
 
     def test_SecondOrder_CentralDiffForNodeThree_GenerateProperCoefficients(self):
-        value = 2.
+        value = 3.
 
         linear_operator = Operator(
             Stencil.central(1.),
@@ -45,12 +43,11 @@ class OperatorTest(unittest.TestCase):
             )
         )
 
-        scheme = linear_operator.expand(3)
+        result = linear_operator.expand(3)
 
-        self.assertEqual(
-            Scheme({2: 1., 3: -2., 4: 1.}, order=2.) * 2,
-            scheme,
-        )
+        expected = Scheme({2: 1., 3: -2., 4: 1.}, order=2.) * value
+
+        self.assertEqual(expected, result)
 
 
 class LazyOperationTest(unittest.TestCase):
@@ -64,7 +61,8 @@ class LazyOperationTest(unittest.TestCase):
 
         s = LazyOperation.summation(s1, s2)
 
-        expected = Scheme({-0.5: w1*2, 0.0: w2*2})
         result = s.expand(0)
+
+        expected = Scheme({-0.5: w1*2, 0.0: w2*2})
 
         self.assertEqual(expected, result)

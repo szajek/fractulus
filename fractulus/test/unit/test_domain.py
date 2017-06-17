@@ -4,22 +4,16 @@ from fractulus.domain import Grid1DBuilder, Grid, Node, Connection
 from mock import MagicMock
 
 
-class NodeTest(unittest.TestCase):
-    pass
-
-
-class SectionTest(unittest.TestCase):
-    pass
-
-
 class GridTest(unittest.TestCase):
-    def test_GetConnections_MiddleNode_ReturnBackwardAndForwardConnection(self):
+    def test_GetConnections_NotExtremeNode_ReturnBackwardAndForwardConnection(self):
 
         connections, grid = self._create_3node_grid()
 
         result = grid.get_connections(1)
 
-        self.assertEquals(connections, result)
+        expected = connections
+
+        self.assertEquals(expected, result)
 
     def test_GetConnections_FirstNode_ReturnOnlyForwardConnection(self):
 
@@ -27,7 +21,9 @@ class GridTest(unittest.TestCase):
 
         result = grid.get_connections(0)
 
-        self.assertEquals([connections[0]], result)
+        expected = connections[:1]
+
+        self.assertEquals(expected, result)
 
     def test_GetConnections_LastNode_ReturnOnlyBackwardConnection(self):
 
@@ -35,7 +31,20 @@ class GridTest(unittest.TestCase):
 
         result = grid.get_connections(2)
 
-        self.assertEquals([connections[1]], result)
+        expected = connections[1:]
+
+        self.assertEquals(expected, result)
+
+    def test_Dimensions_OnlyXCoordinate_ReturnXRangeAndNoneForTheYAndZ(self):
+
+        connections, grid = self._create_3node_grid()
+
+        result = grid.get_dimensions()
+
+        start_node, end_node = grid.nodes[0], grid.nodes[-1]
+        expected = (end_node.x - start_node.x, None, None)
+
+        self.assertEquals(expected, result)
 
     def test_GetByAddress_Exists_ReturnNode(self):
         grid = Grid(
@@ -47,7 +56,8 @@ class GridTest(unittest.TestCase):
             connections=[]
         )
 
-        self.assertEqual('0', grid.get_by_address(0).tag)
+        for i in range(3):
+            self.assertEqual(str(i), grid.get_by_address(i).tag)
 
     def _create_3node_grid(self):
         nodes = [
@@ -64,31 +74,41 @@ class GridTest(unittest.TestCase):
 
 
 class Domain1DBuilderTest(unittest.TestCase):
-    def test_NodesByNumber_ZeroOrOne_Raise(self):
+    def test_AddUniformlyDistributedNodes_NumberIsZeroOrOne_Raise(self):
+
         b = Grid1DBuilder(4)
+
         with self.assertRaises(AttributeError):
-            b.nodes_by_number(1)
+            b.add_uniformly_distributed_nodes(1)
 
-    def test_NodesByNumber_MoreThan1_CreateGivenNodesNumberUniformlyDistributed(self):
-        b = Grid1DBuilder(6)
-        b.nodes_by_number(3)
-        domain = b.create()
+    def test_AddUniformlyDistributedNodes_MoreThanOne_CreateGivenNumberOfEquallySpacedNodes(self):
+        node_number = 3
 
-        nodes = domain.nodes
-        self.assertEqual(3, len(nodes))
-        self.assertEqual(0., nodes[0].x)
-        self.assertEqual(3., nodes[1].x)
-        self.assertEqual(6., nodes[2].x)
+        nodes, connections = self._create_uniformly_distributed_nodes(node_number)
 
-    def test_NodesByNumber_MoreThan1_CreateConnectionsForSuccessiveNodes(self):
-        b = Grid1DBuilder(6)
-        b.nodes_by_number(3)
-        domain = b.create()
+        self.assertEqual(node_number, len(nodes))
 
-        nodes = domain.nodes
-        connections = domain.connections
-        self.assertEqual(nodes[0], connections[0].start)
-        self.assertEqual(nodes[1], connections[0].end)
-        self.assertEqual(nodes[1], connections[1].start)
-        self.assertEqual(nodes[2], connections[1].end)
+        self.assertEqual(1., len(set(self._calculate_spaces_between_nodes(nodes))))
+
+    def test_AddUniformlyDistributedNodes_MoreThanOne_CreateConnectionsForSuccessiveNodes(self):
+        node_number = 3
+
+        nodes, connections = self._create_uniformly_distributed_nodes(node_number)
+
+        for i in range(node_number - 1):
+            self.assertEqual(nodes[i: i+2], list(connections[i]))
+
+    def _calculate_spaces_between_nodes(self, nodes):
+        def calc_distance_to_predecessor(i):
+            return nodes[i].x - nodes[i - 1].x
+
+        return [calc_distance_to_predecessor(i) for i in range(1, len(nodes))]
+
+    def _create_uniformly_distributed_nodes(self, node_number):
+        domain = (
+            Grid1DBuilder(6)
+                .add_uniformly_distributed_nodes(node_number)
+                .create()
+        )
+        return domain.nodes, domain.connections
 

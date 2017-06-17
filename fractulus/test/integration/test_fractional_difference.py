@@ -4,7 +4,7 @@ from fractulus.fractional_difference import CaputoSettings, create_left_caputo_s
 
 
 class LeftCaputoStencilTest(unittest.TestCase):
-    def test_Expand_NodeZeroAlphaAlmostOne_ReturnNodeZeroWeightAlmostOne(self):
+    def test_Expand_NodeZeroAndAlphaAlmostOne_ReturnNodeZeroWeightAlmostOne(self):
 
         settings = CaputoSettings(0.9999, 1., 1.)
         stencil = create_left_caputo_stencil(settings)

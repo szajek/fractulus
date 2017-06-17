@@ -1,10 +1,11 @@
 import unittest
+
 import numpy as np
 from mock import MagicMock
 
 from fractulus.finite_difference import Scheme, LinearEquationTemplate
-from fractulus.system import LinearEquation,  model_to_equations, VirtualNode, EquationWriter, VirtualNodeWriter, \
-    extract_virtual_nodes, Output, VirtualValueStrategy
+from fractulus.system import (LinearEquation, model_to_equations, VirtualNode, EquationWriter, VirtualNodeWriter,
+                              extract_virtual_nodes, Output, VirtualValueStrategy)
 
 
 def create_domain(node_number, delta=2.):
@@ -20,41 +21,41 @@ class ExtractVirtualNodesTest(unittest.TestCase):
         domain = create_domain(3)
         eq = LinearEquation({-1: 2., 3: 3., 1: 1.}, 1.)
 
-        self.assertEqual(
-            [VirtualNode(3, 1), VirtualNode(-1, 1)],
-            extract_virtual_nodes(eq, domain, strategy=VirtualValueStrategy.SYMMETRY)
-        )
+        result = extract_virtual_nodes(eq, domain, strategy=VirtualValueStrategy.SYMMETRY)
+
+        expected = [VirtualNode(3, 1), VirtualNode(-1, 1)]
+
+        self.assertEqual(expected, result)
 
     def test_Call_ExistAndAsBorderStrategy_ReturnVirtualNode(self):
         domain = create_domain(3)
         eq = LinearEquation({-1: 2., 3: 3., 1: 1.}, 1.)
 
-        self.assertEqual(
-            [VirtualNode(3, 2), VirtualNode(-1, 0)],
-            extract_virtual_nodes(eq, domain, strategy=VirtualValueStrategy.AS_IN_BORDER)
-        )
+        result = extract_virtual_nodes(eq, domain, strategy=VirtualValueStrategy.AS_IN_BORDER)
+
+        expected = [VirtualNode(3, 2), VirtualNode(-1, 0)]
+
+        self.assertEqual(expected, result)
 
 
 class ModelToEquationsTest(unittest.TestCase):
     def test_Call_Always_ReturnEquationsCreatedBasedOnGivenTemplateAndDomain(self):
+        def get_scheme(i):
+            return Scheme({i: i})
 
-        coefficients = lambda i: Scheme({i: 1})
-        free_value = lambda i: i
+        def get_free_value(i):
+            return i
 
-        equation = LinearEquationTemplate(coefficients, free_value)
+        node_span = 2.
+        node_number = 3
+
+        equation = LinearEquationTemplate(get_scheme, get_free_value)
 
         model = MagicMock(
             domain=MagicMock(
-                nodes=[
-                    MagicMock(),
-                    MagicMock(),
-                    MagicMock(),
-                ],
+                nodes=[MagicMock() for node_address in range(node_number)],
                 get_connections=MagicMock(
-                    return_value=[
-                    MagicMock(length=2.),
-                    MagicMock(length=2.),
-                ]
+                    return_value=[MagicMock(length=node_span) for node_address in range(node_number - 1)]
                 )
             ),
             bcs=[],
@@ -63,80 +64,91 @@ class ModelToEquationsTest(unittest.TestCase):
 
         equations = model_to_equations(model)
 
-        self.assertEqual({0: 1/2.}, equations[0].coefficients)
-        self.assertEqual(0., equations[0].free_value)
+        for equation_number in range(0, 3):
+            equation = equations[equation_number]
+
+            expected_coefficients = {equation_number: equation_number/node_span}
+            expected_free_value = get_free_value(equation_number)
+
+            self.assertEqual(expected_coefficients, equation.coefficients)
+            self.assertEqual(expected_free_value, equation.free_value)
 
 
 class EquationWriterTest(unittest.TestCase):
-
-    def test_ToWeightArray_RenumeratorNotProvided_ReturnArrayWithWeights(self):
-
+    def test_ToCoefficientsArray_RenumeratorNotProvided_ReturnArrayWithWeights(self):
         eq = LinearEquation({0: 2.}, 1.)
-
         writer = EquationWriter(eq, {})
 
         result = writer.to_coefficients_array(3)
 
-        np.testing.assert_allclose(np.array(
-            [2., 0., 0.],
-        ), result)
+        expected = np.array([2., 0., 0.])
 
-    def test_ToWeightArray_RenumeratorProvided_ReturnArrayWithWeightsInRenumberedPosition(self):
+        np.testing.assert_allclose(expected, result)
 
+    def test_ToCoefficientsArray_RenumeratorProvided_ReturnArrayWithWeightsInRenumberedPosition(self):
         eq = LinearEquation({0: 2.}, 1.)
-
         writer = EquationWriter(eq, {0: 1})
 
         result = writer.to_coefficients_array(3)
 
-        np.testing.assert_allclose(np.array(
-            [0., 2., 0.],
-        ), result)
+        expected = np.array([0., 2., 0.],)
+
+        np.testing.assert_allclose(expected, result)
 
     def test_ToFreeValue_Always_ReturnFreeValue(self):
-
         eq = LinearEquation({0: 2.}, 1.)
-
         writer = EquationWriter(eq, {0: 1})
 
         result = writer.to_free_value()
 
-        np.testing.assert_allclose(np.array(1.,), result)
+        expected = np.array(1., )
+
+        np.testing.assert_allclose(expected, result)
 
 
 class VirtualNodeWriterTest(unittest.TestCase):
-    def test_ToWeightArray_Always_ReturnArrayWithWeights_SymmetryConsidered(self):
+    def test_ToCoefficientsArray_Always_ReturnArrayWithWeights_SymmetryConsidered(self):
         eq = VirtualNode(-1, 1)
-
         writer = VirtualNodeWriter(eq, 0, 2)
 
         result = writer.to_coefficients_array(3)
 
-        np.testing.assert_allclose(np.array(
-            [0., -1., 1.],
-        ), result)
+        expected = np.array([0., -1., 1.],)
+
+        np.testing.assert_allclose(expected, result)
 
 
 class OutputTest(unittest.TestCase):
     def test_GetItem_IndexInDomain_ReturnValueInRealNode(self):
-        o = Output([1, 2, 3], 2, {})
-        self.assertEquals(
-            2.,
-            o[1]
-        )
+        value = 2
+        o = Output([1, value, 3], 2, {})
+
+        result = o[1]
+
+        expected = value
+
+        self.assertEquals(expected, result)
 
     def test_GetItem_NegativeIndex_ReturnValueInVirtualNode(self):
-        address_forwarder = {-1: 2}
-        o = Output([1, 2, 3, 4], 2, address_forwarder)
-        self.assertEquals(
-            3.,
-            o[-1]
-        )
+        value = 3.
+        virtual_node_address = -1
+        address_forwarder = {virtual_node_address: 2}
+        o = Output([1, 2, value, 4], 2, address_forwarder)
 
-    def test_GetItem_NegativeIndex_ReturnValueInVirtualNode(self):
-        address_forwarder = {2: 2}
-        o = Output([1, 2, 3], 2, address_forwarder)
-        self.assertEquals(
-            3.,
-            o[2]
-        )
+        result = o[virtual_node_address]
+
+        expected = value
+
+        self.assertEquals(expected, result)
+
+    def test_GetItem_PositiveIndex_ReturnValueInVirtualNode(self):
+        value = 2
+        virtual_node_address = 3
+        address_forwarder = {virtual_node_address: 2}
+        o = Output([1, 2, value], 2, address_forwarder)
+
+        result = o[virtual_node_address]
+
+        expected = value
+
+        self.assertEquals(expected, result)

@@ -50,16 +50,55 @@ class DeltaTest(unittest.TestCase):
     def test_Average_Always_ReturnAverageValueForInputs(self):
         d = Delta(1., 2.)
 
-        self.assertEquals(1.5, d.average)
+        result = d.average
 
-    def test_MathOperations_Always_OperateOnAverageValueAndReturnFloat(self):
+        expected = (1. + 2.) / 2.
+
+        self.assertEquals(expected, result)
+
+    def test_Add_Always_ReturnAverageAddedToGivenAddend(self):
         d = Delta(1., 2.)
+        addend = 1.
         avg = d.average
 
-        self.assertEqual(avg + 1., d + 1.)
-        self.assertEqual(avg * 2., d * 2.)
-        self.assertEqual(avg - 2., d - 2.)
-        self.assertEqual(avg / 2., d / 2.)
+        result = d + addend
+
+        expected = avg + addend
+
+        self.assertEquals(expected, result)
+
+    def test_Multiply_Always_ReturnAverageValueMultipliedByGivenFactor(self):
+        d = Delta(1., 2.)
+        factor = 2.
+        avg = d.average
+
+        result = d * factor
+
+        expected = avg * factor
+
+        self.assertEquals(expected, result)
+
+    def test_Subtract_Always_ReturnAverageReducedByGivenSubtrahend(self):
+        d = Delta(1., 2.)
+        subtrahend = 2.
+        avg = d.average
+
+        result = d - subtrahend
+
+        expected = avg - subtrahend
+
+        self.assertEquals(expected, result)
+
+    def test_Divide_Always_ReturnAverageValueDividedByGivenDivisor(self):
+        d = Delta(1., 2.)
+        divisor = 2.
+        avg = d.average
+
+        result = d / divisor
+
+        expected = avg / divisor
+
+        self.assertEquals(expected, result)
 
 
 class CoefficientsTest(unittest.TestCase):
@@ -71,10 +110,9 @@ class CoefficientsTest(unittest.TestCase):
 
         result = coefficients.to_value(output)
 
-        self.assertEqual(
-            1.3 * 2.1 + 2.3 * 1.1,
-            result,
-        )
+        expected = 1.3 * 2.1 + 2.3 * 1.1
+
+        self.assertEqual(expected, result)
 
 
 class SchemeTest(unittest.TestCase):
@@ -97,7 +135,7 @@ class SchemeTest(unittest.TestCase):
             self._build_scheme((1., 2.))
         )
 
-    def test_Duplicate_Always_ReturnClone(self):
+    def test_Duplicate_Always_ReturnCopiedObject(self):
         s1 = Scheme({1: 2, 3: 1.})
 
         result = s1.duplicate()

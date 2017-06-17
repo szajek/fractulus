@@ -1,10 +1,18 @@
+from functools import reduce
 from operator import is_not
 from functools import partial
 
-from .geometry import Point, Vector
+from .geometry import Point, Vector, calculate_boundary_box, calculate_dimensions
 
 
 __all__ = ['Node', 'Connection', 'Grid', 'Grid1DBuilder', ]
+
+
+def reduce_or_return_none(function, sequence, initial=None):
+    try:
+        return reduce(function, sequence, initial)
+    except StopIteration:
+        return None
 
 
 class Node(Point):
@@ -36,6 +44,13 @@ class Grid:
     def get_by_address(self, address):
         return self.nodes[int(address)]
 
+    def calculate_boundary_box(self):
+        return calculate_boundary_box(self.nodes)
+
+    def get_dimensions(self):
+        bbox = self.calculate_boundary_box()
+        return calculate_dimensions(bbox)
+
 
 class Grid1DBuilder:
     def __init__(self, length, start=0.):
@@ -45,13 +60,13 @@ class Grid1DBuilder:
         self._nodes = []
         self._connections = []
 
-    def nodes_by_number(self, number):
+    def add_uniformly_distributed_nodes(self, number):
         if number < 2:
             raise AttributeError("Number of point must be at least 2")
         section_length = self._length / (number - 1)
 
         prev_node = self.add_node_by_coordinate(self._start)
-        for node_num in range(number-1):
+        for node_num in range(number - 1):
             next_node = self.add_node_by_coordinate(self._start + (node_num + 1) * section_length)
             self.add_connection_by_nodes(prev_node, next_node)
             prev_node = next_node
