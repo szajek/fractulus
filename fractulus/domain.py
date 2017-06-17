@@ -7,13 +7,6 @@ from .geometry import Point, Vector, BoundaryBox
 __all__ = ['Node', 'Connection', 'Grid', 'Grid1DBuilder', ]
 
 
-def reduce_or_return_none(function, sequence, initial=None):
-    try:
-        return reduce(function, sequence, initial)
-    except StopIteration:
-        return None
-
-
 class Node(Point):
     def __repr__(self):
         return 'x={x}, y={y}, z={z}'.format(x=self.x, y=self.y, z=self.z)
