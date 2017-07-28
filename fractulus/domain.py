@@ -1,5 +1,4 @@
 from functools import partial
-from functools import reduce
 from operator import is_not
 
 from .geometry import Point, Vector, BoundaryBox

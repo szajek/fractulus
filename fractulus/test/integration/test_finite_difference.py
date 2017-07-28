@@ -1,6 +1,6 @@
 import unittest
 
-from fractulus.finite_difference import Operator, Stencil, Number, Scheme, LazyOperation
+from fractulus.finite_difference import Operator, Stencil, Number, Scheme, LazyOperation, NodeFunction
 
 
 class OperatorTest(unittest.TestCase):
@@ -29,6 +29,30 @@ class OperatorTest(unittest.TestCase):
         result = linear_operator.expand(3)
 
         expected = Scheme({2: -0.5, 4: 0.5}) * value
+
+        self.assertEqual(expected, result)
+
+    def test_FirstOrder_FunctionMultiplication_GenerateProperCoefficients(self):
+
+        node_address = 3.
+
+        def g(address):
+            return address
+
+        def f(address):
+            return 100*address
+
+        linear_operator = Operator(
+            Stencil.central(),
+            LazyOperation.multiplication(
+                Number(NodeFunction(g)),
+                Number(NodeFunction(f))
+            )
+        )
+
+        result = sum(linear_operator.expand(node_address)._weights.values())
+
+        expected = 200*node_address  # (g*f)' = g'*f + g*f' = 1*100x + x*100 = 200x
 
         self.assertEqual(expected, result)
 
@@ -66,3 +90,5 @@ class LazyOperationTest(unittest.TestCase):
         expected = Scheme({-0.5: w1*2, 0.0: w2*2})
 
         self.assertEqual(expected, result)
+
+
