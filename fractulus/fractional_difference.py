@@ -1,8 +1,7 @@
 import collections
 import math
 
-from .finite_difference import Operator, Stencil, Number
-
+from fdm.finite_difference import Operator, Stencil, Number
 
 __all__ = ['create_fractional_deformation_operator', 'CaputoSettings']
 

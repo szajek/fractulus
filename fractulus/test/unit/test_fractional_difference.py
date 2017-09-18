@@ -1,7 +1,6 @@
 import math
 import unittest
 
-from fractulus.finite_difference import Scheme
 from fractulus.fractional_difference import (CaputoSettings, create_right_caputo_stencil, create_left_caputo_stencil, \
     create_riesz_caputo_stencil)
 
