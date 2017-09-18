@@ -59,7 +59,7 @@ def model_to_equations(model):
         else:
             delta = Delta.from_connections(*model.domain.get_connections(node_address))
             return LinearEquation(
-                    model.equation.weights(node_address).to_coefficients(delta),
+                    model.equation.operator(node_address).to_coefficients(delta),
                     model.equation.free_value(node_address)
             )
 

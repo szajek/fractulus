@@ -439,4 +439,4 @@ class NodeFunction:
 
 #
 
-LinearEquationTemplate = collections.namedtuple('LinearEquationTemplate', ('weights', 'free_value'))
+LinearEquationTemplate = collections.namedtuple('LinearEquationTemplate', ('operator', 'free_value'))
