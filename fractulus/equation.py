@@ -3,7 +3,7 @@ import math
 
 from fdm.equation import Operator, Stencil, Number
 
-__all__ = ['create_fractional_deformation_operator', 'CaputoSettings']
+__all__ = ['CaputoSettings']
 
 
 CaputoSettings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resolution'))
@@ -69,16 +69,3 @@ def create_riesz_caputo_stencil(settings, increase_order_by=0.):
            (left_stencil + Number((-1.) ** n) * right_stencil)
 
 
-def create_fractional_deformation_operator(settings):
-    alpha = settings.alpha
-    n = math.floor(alpha) + 1.
-    p = settings.resolution
-
-    multiplier = p ** (alpha - 1)  # l_ef**(alpha-1) = p**(alpha-1) * 1./h**(1-alpha) <- lef describes by grid span
-
-    return Operator(
-        Number(multiplier) * create_riesz_caputo_stencil(settings, increase_order_by=1-alpha),
-        Operator(  # todo: replace with Operator.order(n)
-            Stencil.central(1.),
-        )
-    )
