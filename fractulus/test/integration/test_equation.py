@@ -1,6 +1,6 @@
 import unittest
 
-from fractulus.fractional_difference import CaputoSettings, create_left_caputo_stencil
+from fractulus.equation import CaputoSettings, create_left_caputo_stencil
 
 
 class LeftCaputoStencilTest(unittest.TestCase):

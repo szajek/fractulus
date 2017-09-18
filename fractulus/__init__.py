@@ -1,2 +1,2 @@
-from .fractional_difference import *
+from .equation import *
 

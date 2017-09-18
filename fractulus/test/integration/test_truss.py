@@ -2,10 +2,10 @@ import unittest
 import numpy as np
 
 from fdm.domain import Grid1DBuilder
-from fdm.finite_difference import Operator, Stencil, Number, LinearEquationTemplate, NodeFunction
+from fdm.equation import Operator, Stencil, Number, LinearEquationTemplate, NodeFunction
 from fdm.model import BoundaryCondition, Model
 from fdm.system import solve
-from fractulus.fractional_difference import CaputoSettings, create_fractional_deformation_operator
+from fractulus.equation import CaputoSettings, create_fractional_deformation_operator
 
 
 def _create_linear_function(length, node_number, a, b):
