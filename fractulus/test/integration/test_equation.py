@@ -1,6 +1,9 @@
 import unittest
 
-from fractulus.equation import CaputoSettings, create_left_caputo_stencil
+import collections
+
+from fractulus.equation import CaputoSettings, create_left_caputo_stencil, create_riesz_caputo_stencil
+from fdm import Operator, Number, Stencil
 
 
 class LeftCaputoStencilTest(unittest.TestCase):
@@ -14,4 +17,5 @@ class LeftCaputoStencilTest(unittest.TestCase):
             stencil.expand(0)._weights[0],
             places=3,
         )
+
 

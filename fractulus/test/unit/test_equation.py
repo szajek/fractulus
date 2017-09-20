@@ -16,14 +16,13 @@ class CaputoStencilTest(unittest.TestCase):
 
         expected = self._calc_expected_weights(
             settings,
-            -settings.lf,
+            settings.lf,
             0.,
             lambda p, n, index: (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha),
             lambda p, n, index: 1.,
             lambda p, j, index: (p - j + 1.) ** index - 2. * (p - j) ** index + (p - j - 1.) ** index,
             lambda n: 1.,
         )
-
         self.assertEqual(expected, results,)
 
     def test_RightSide_Always_ReturnStencilWithCorrectWeights(self):
@@ -74,10 +73,10 @@ class CaputoStencilTest(unittest.TestCase):
         u_p_weight = u_p_weight_provider(p, n, index)
 
         weights = {
-            left_limit: u_0_weight,
+            -left_limit: u_0_weight,
             right_limit: u_p_weight,
         }
         for j in range(1, p):
-            relative_node_address = left_limit + j * delta
+            relative_node_address = -left_limit + j * delta
             weights[relative_node_address] = u_j_weight_provider(p, j, index)
         return {relative_address: multiplier * weight for relative_address, weight in weights.items()}
