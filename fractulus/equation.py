@@ -32,10 +32,10 @@ def create_side_caputo_stencil(alpha, p, left_range, right_range, left_weight_pr
     return Stencil.uniform(left_range, right_range, p, weights_provider, order=-(n - alpha))
 
 
-def create_left_caputo_stencil(alpha, p, lf):
+def create_left_caputo_stencil(alpha, p):
     return create_side_caputo_stencil(
         alpha, p,
-        lf,
+        p,
         0.,
         lambda p, n, index, alpha: (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha),
         lambda p, n, index, alpha: 1.,
@@ -44,11 +44,11 @@ def create_left_caputo_stencil(alpha, p, lf):
     )
 
 
-def create_right_caputo_stencil(alpha, p, lf):
+def create_right_caputo_stencil(alpha, p):
     return create_side_caputo_stencil(
         alpha, p,
         0.,
-        lf,
+        p,
         lambda p, n, index, alpha: 1.,
         lambda p, n, index, alpha: (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha),
         lambda p, j, index: (j + 1.) ** index - 2. * j ** index + (j - 1.) ** index,
@@ -59,18 +59,20 @@ def create_right_caputo_stencil(alpha, p, lf):
 def create_riesz_caputo_stencil(settings, increase_order_by=0., dynamic_resolution=lambda address: 1.):
     alpha = settings.alpha
     # p = settings.resolution
-    lf = settings.lf
+    # lf = settings.lf
     n = math.floor(alpha) + 1.
 
     def left_caputo_stencil_builder(node_address):
         dynamic_p = dynamic_resolution(node_address)
-        stencil = create_left_caputo_stencil(alpha, dynamic_p, lf)
-        return stencil.mutate(order=stencil.order + increase_order_by)
+        stencil = create_left_caputo_stencil(alpha, dynamic_p)
+        mutated = stencil.mutate(order=stencil.order + increase_order_by)
+        return mutated
 
     def right_caputo_stencil_builder(node_address):
         dynamic_p = dynamic_resolution(node_address)
-        stencil = create_right_caputo_stencil(alpha, dynamic_p, lf)
-        return stencil.mutate(order=stencil.order + increase_order_by)
+        stencil = create_right_caputo_stencil(alpha, dynamic_p)
+        mutated = stencil.mutate(order=stencil.order + increase_order_by)
+        return mutated
 
     left_stencil = DynamicStencil(left_caputo_stencil_builder)
     right_stencil = DynamicStencil(right_caputo_stencil_builder)
