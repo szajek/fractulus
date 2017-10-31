@@ -3,7 +3,7 @@ import math
 
 from fdm.equation import Stencil, Number, DynamicStencil
 
-__all__ = ['CaputoSettings']
+__all__ = ['CaputoSettings', 'create_left_caputo_stencil', 'create_right_caputo_stencil', 'create_riesz_caputo_stencil']
 
 
 CaputoSettings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resolution'))
@@ -11,10 +11,8 @@ CaputoSettings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resol
 
 def create_side_caputo_stencil(alpha, p, left_range, right_range, left_weight_provider, right_weight_provider,
                                interior_weights_provider, multiplier):
-    # alpha = settings.alpha
     n = math.floor(alpha) + 1.
     index = (n - alpha + 1.)
-    # p = settings.resolution
     _multiplier = multiplier(n) * (1. / math.gamma(n - alpha + 2.))
 
     def pure_weight_provider(node_number, relatrive_address):
@@ -56,31 +54,24 @@ def create_right_caputo_stencil(alpha, p):
     )
 
 
-def create_riesz_caputo_stencil(settings, increase_order_by=0., dynamic_resolution=lambda address: 1.):
+def create_riesz_caputo_stencil(settings, increase_order_by=0., dynamic_resolution=None):
     alpha = settings.alpha
-    # p = settings.resolution
-    # lf = settings.lf
     n = math.floor(alpha) + 1.
 
     def left_caputo_stencil_builder(node_address):
-        dynamic_p = dynamic_resolution(node_address)
+        dynamic_p = dynamic_resolution(node_address) if dynamic_resolution is not None else settings.resolution
         stencil = create_left_caputo_stencil(alpha, dynamic_p)
         mutated = stencil.mutate(order=stencil.order + increase_order_by)
         return mutated
 
     def right_caputo_stencil_builder(node_address):
-        dynamic_p = dynamic_resolution(node_address)
+        dynamic_p = dynamic_resolution(node_address) if dynamic_resolution else settings.resolution
         stencil = create_right_caputo_stencil(alpha, dynamic_p)
         mutated = stencil.mutate(order=stencil.order + increase_order_by)
         return mutated
 
     left_stencil = DynamicStencil(left_caputo_stencil_builder)
     right_stencil = DynamicStencil(right_caputo_stencil_builder)
-
-    # left_stencil = create_left_caputo_stencil(alpha, p, lf)
-    # left_stencil = LocalizedStencil(left_stencil.mutate(order=left_stencil.order + increase_order_by), scheme_corrector)
-    # right_stencil = create_right_caputo_stencil(alpha, p, lf)
-    # right_stencil = LocalizedStencil(right_stencil.mutate(order=right_stencil.order + increase_order_by), scheme_corrector)
 
     return Number(1. / 2. * math.gamma(2. - alpha) / math.gamma(2.)) * \
            (left_stencil + Number((-1.) ** n) * right_stencil)
