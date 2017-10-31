@@ -8,10 +8,13 @@ from fractulus.equation import (CaputoSettings, create_right_caputo_stencil, cre
 class CaputoStencilTest(unittest.TestCase):
     def test_LeftSide_Always_ReturnStencilWithCorrectWeights(self):
 
-        settings = CaputoSettings(alpha=0.5, lf=0.6, resolution=4)
+        resolution = lf = 4
+        alpha = 0.5
+
+        settings = CaputoSettings(alpha=alpha, lf=resolution, resolution=resolution)
         alpha = settings.alpha
 
-        _operator = create_left_caputo_stencil(settings)
+        _operator = create_left_caputo_stencil(alpha, p=resolution)
         results = _operator._weights
 
         expected = self._calc_expected_weights(
@@ -23,14 +26,16 @@ class CaputoStencilTest(unittest.TestCase):
             lambda p, j, index: (p - j + 1.) ** index - 2. * (p - j) ** index + (p - j - 1.) ** index,
             lambda n: 1.,
         )
-        self.assertEqual(expected, results,)
+        self.assertEqual(expected, results)
 
     def test_RightSide_Always_ReturnStencilWithCorrectWeights(self):
+        resolution = lf = 4
+        alpha = 0.5
 
-        settings = CaputoSettings(alpha=0.5, lf=0.6, resolution=4)
+        settings = CaputoSettings(alpha=alpha, lf=lf, resolution=resolution)
         alpha = settings.alpha
 
-        _operator = create_right_caputo_stencil(settings)
+        _operator = create_right_caputo_stencil(alpha, p=resolution)
         results = _operator._weights
 
         expected = self._calc_expected_weights(
