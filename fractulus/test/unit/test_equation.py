@@ -58,7 +58,7 @@ class CaputoStencilTest(unittest.TestCase):
         _settings = CaputoSettings(alpha, lf, resolution)
 
         _stencil = create_riesz_caputo_stencil(_settings)
-        result = _stencil.expand(0.)._weights
+        result = _stencil.expand(0.).weights
 
         self.assertAlmostEqual(1., result[0], places=5)
         self.assertEqual(1., sum(result.values()))

@@ -13,7 +13,7 @@ class LeftCaputoStencilTest(unittest.TestCase):
 
         self.assertAlmostEqual(
             1.,
-            stencil.expand(0)._weights[0],
+            stencil.expand(0).weights[0],
             places=3,
         )
 
