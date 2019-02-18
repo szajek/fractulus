@@ -57,14 +57,48 @@ def create_right_caputo_stencil(alpha, lf, p):
     )
 
 
-def create_riesz_caputo_stencil(settings):
+def create_riesz_stencil(settings, left, right):
     alpha, lf, resolution = settings
     n = math.floor(alpha) + 1.
-
-    left = create_left_caputo_stencil(alpha, lf, resolution)
-    right = create_right_caputo_stencil(alpha, lf, resolution)
-
     return Number(1. / 2. * math.gamma(2. - alpha) / math.gamma(2.)) * \
            (left + Number((-1.) ** n) * right)
 
 
+def create_riesz_caputo_stencil(settings):
+    return create_riesz_stencil(
+        settings,
+        create_left_caputo_stencil(*settings),
+        create_right_caputo_stencil(*settings)
+    )
+
+
+def create_rectangle_rule_side_stencil(alpha, lf, p, start, end, weight):
+    return Stencil.uniform(
+        Point(start), Point(end), p - 1,
+        lambda node_number, relative_address:
+            (lf / float(p - 1)) ** (1. - alpha) / math.gamma(2. - alpha)*weight(node_number))
+
+
+def create_rectangle_rule_left_stencil(alpha, lf, resolution):
+    def weight(i):
+        k = -resolution + i
+        return (-k)**(1. - alpha) - (-k - 1) ** (1. - alpha)
+
+    return create_rectangle_rule_side_stencil(
+        alpha, lf, resolution, -lf, 0., weight
+    )
+
+
+def create_rectangle_rule_right_stencil(alpha, lf, resolution):
+    return create_rectangle_rule_side_stencil(
+        alpha, lf, resolution, 0., lf,
+        lambda k: -((k + 1.)**(1. - alpha) - k**(1. - alpha))
+    )
+
+
+def create_riesz_rectangle_stencil(settings):
+    return create_riesz_stencil(
+        settings,
+        create_rectangle_rule_left_stencil(*settings),
+        create_rectangle_rule_right_stencil(*settings)
+    )

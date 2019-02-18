@@ -1,9 +1,11 @@
 import math
 import unittest
 
+from fdm import Scheme, Stencil
 from fdm.geometry import Point
 from fractulus.equation import (CaputoSettings, create_right_caputo_stencil, create_left_caputo_stencil, \
-                                create_riesz_caputo_stencil)
+                                create_riesz_caputo_stencil, create_rectangle_rule_left_stencil,
+                                create_rectangle_rule_right_stencil)
 
 
 class CaputoStencilTest(unittest.TestCase):
@@ -87,3 +89,31 @@ class CaputoStencilTest(unittest.TestCase):
             relative_node_address = -left_limit + j * h
             weights[relative_node_address] = u_j_weight_provider(p, j, index)
         return {Point(relative_address): multiplier * weight for relative_address, weight in weights.items()}
+
+
+class RectangleRuleStencilTest(unittest.TestCase):
+    def test_Create_Left_ReturnCorrectStencil(self):
+
+        result = create_rectangle_rule_left_stencil(alpha=0.5, lf=0.6, resolution=4)
+
+        expected = Stencil({
+            Point(-0.6): 0.1352142643344008,
+            Point(-0.4): 0.16038909801255471,
+            Point(-0.2): 0.20902314205707648,
+            Point(-0.0): 0.504626504404032
+        })
+
+        self.assertEqual(expected, result)
+
+    def test_Create_Right_ReturnCorrectStencil(self):
+
+        result = create_rectangle_rule_right_stencil(alpha=0.5, lf=0.6, resolution=4)
+
+        expected = Stencil({
+            Point(0.): -0.504626504404032,
+            Point(0.2): -0.20902314205707648,
+            Point(0.4): -0.16038909801255471,
+            Point(0.6): -0.1352142643344008
+        })
+
+        self.assertEqual(expected, result)
