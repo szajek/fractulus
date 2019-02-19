@@ -1,5 +1,5 @@
 from fdm.geometry import Point
-from fractulus.equation import CaputoSettings, create_left_caputo_stencil
+from fractulus.equation import Settings, create_left_caputo_stencil
 import unittest
 import numpy as np
 
@@ -87,7 +87,7 @@ class RieszCaputoStudy(unittest.TestCase):
     def _create_derivative(self, alpha, lf):
         return fdm.Operator(
             fr.create_riesz_caputo_stencil(
-                fr.CaputoSettings(alpha, lf, lf)
+                fr.Settings(alpha, lf, lf)
             ),
             fdm.Number(self._function)
         )

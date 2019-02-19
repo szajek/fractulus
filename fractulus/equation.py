@@ -4,56 +4,64 @@ import math
 from fdm.equation import Stencil, Number
 from fdm.geometry import Point
 
-__all__ = ['CaputoSettings', 'create_left_caputo_stencil', 'create_right_caputo_stencil', 'create_riesz_caputo_stencil']
+__all__ = ['Settings', 'create_left_caputo_stencil', 'create_right_caputo_stencil', 'create_riesz_caputo_stencil',
+           'create_left_rectangle_rule_stencil', 'create_right_rectangle_rule_stencil',
+           'create_riesz_rectangle_rule_stencil', 'create_left_trapezoidal_rule_stencil',
+           'create_right_trapezoidal_rule_stencil', 'create_riesz_trapezoidal_rule_stencil']
 
 
-CaputoSettings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resolution'))
+Settings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resolution'))
 
 
-def create_side_caputo_stencil(alpha, p, start, end, left_weight_provider, right_weight_provider,
-                               interior_weights_provider, multiplier):
+def create_parametrized_stencil(start, end, points_number, multiplier, weight):
+
+    def _weight(node_number, relative_address):
+        return multiplier * weight(node_number)
+
+    return Stencil.uniform(Point(start), Point(end), points_number, _weight)
+
+
+def create_side_caputo_stencil(alpha, p, start, end,  multiplier, weights):
     n = math.floor(alpha) + 1.
-    index = (n - alpha + 1.)
-    _range = end - start
-    h = _range/p
-    _multiplier = multiplier(n) * ((h**(n - alpha)) / math.gamma(n - alpha + 2.))
+    h = (end - start)/p
+    _multiplier = multiplier * ((h**(n - alpha)) / math.gamma(n - alpha + 2.))
 
-    def pure_weight_provider(node_number, relatrive_address):
-        if node_number == 0:
-            return left_weight_provider(p, n, index, alpha)
-        elif node_number == p:
-            return right_weight_provider(p, n, index, alpha)
-        else:
-            j = node_number
-            return interior_weights_provider(p, j, index)
-
-    def weights_provider(*args):
-        return _multiplier * pure_weight_provider(*args)
-
-    return Stencil.uniform(Point(start), Point(end), p, weights_provider)
+    return create_parametrized_stencil(start, end, p, _multiplier, weights)
 
 
 def create_left_caputo_stencil(alpha, lf, p):
+    n = math.floor(alpha) + 1.
+    index = (n - alpha + 1.)
+
+    def weights(number):
+        if number == 0:
+            return (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha)
+        elif number == p:
+            return 1.
+        else:
+            j = number
+            return (p - j + 1.) ** index - 2. * (p - j) ** index + (p - j - 1.) ** index
+
     return create_side_caputo_stencil(
-        alpha, p,
-        -lf,
-        0.,
-        lambda p, n, index, alpha: (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha),
-        lambda p, n, index, alpha: 1.,
-        lambda p, j, index: (p - j + 1.) ** index - 2. * (p - j) ** index + (p - j - 1.) ** index,
-        lambda n: 1.,
+        alpha, p, -lf, 0., 1., weights,
     )
 
 
 def create_right_caputo_stencil(alpha, lf, p):
+    n = math.floor(alpha) + 1.
+    index = (n - alpha + 1.)
+
+    def weights(number):
+        if number == 0:
+            return 1.
+        elif number == p:
+            return (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha)
+        else:
+            j = number
+            return (j + 1.) ** index - 2. * j ** index + (j - 1.) ** index
+
     return create_side_caputo_stencil(
-        alpha, p,
-        0.,
-        lf,
-        lambda p, n, index, alpha: 1.,
-        lambda p, n, index, alpha: (p - 1.) ** index - (p - n + alpha - 1.) * p ** (n - alpha),
-        lambda p, j, index: (j + 1.) ** index - 2. * j ** index + (j - 1.) ** index,
-        lambda n: (-1.) ** n,
+        alpha, p, 0., lf, (-1.) ** n, weights
     )
 
 
@@ -72,33 +80,90 @@ def create_riesz_caputo_stencil(settings):
     )
 
 
-def create_rectangle_rule_side_stencil(alpha, lf, p, start, end, weight):
-    return Stencil.uniform(
-        Point(start), Point(end), p - 1,
-        lambda node_number, relative_address:
-            (lf / float(p - 1)) ** (1. - alpha) / math.gamma(2. - alpha)*weight(node_number))
+def create_side_rectangle_rule_stencil(alpha, lf, p, start, end, weight):
+    return create_parametrized_stencil(
+        start, end, p - 1,
+        (lf / float(p)) ** (1. - alpha) / math.gamma(2. - alpha),
+        weight)
 
 
-def create_rectangle_rule_left_stencil(alpha, lf, resolution):
+def create_left_rectangle_rule_stencil(settings):
+    alpha, lf, resolution = settings
+    dx = lf / float(resolution)
+
     def weight(i):
         k = -resolution + i
         return (-k)**(1. - alpha) - (-k - 1) ** (1. - alpha)
 
-    return create_rectangle_rule_side_stencil(
-        alpha, lf, resolution, -lf, 0., weight
+    return create_side_rectangle_rule_stencil(
+        alpha, lf, resolution, -lf + dx, 0., weight
     )
 
 
-def create_rectangle_rule_right_stencil(alpha, lf, resolution):
-    return create_rectangle_rule_side_stencil(
-        alpha, lf, resolution, 0., lf,
+def create_right_rectangle_rule_stencil(settings):
+    alpha, lf, resolution = settings
+    dx = lf / float(resolution)
+
+    return create_side_rectangle_rule_stencil(
+        alpha, lf, resolution, 0., lf - dx,
         lambda k: -((k + 1.)**(1. - alpha) - k**(1. - alpha))
     )
 
 
-def create_riesz_rectangle_stencil(settings):
+def create_riesz_rectangle_rule_stencil(settings):
     return create_riesz_stencil(
         settings,
-        create_rectangle_rule_left_stencil(*settings),
-        create_rectangle_rule_right_stencil(*settings)
+        create_left_rectangle_rule_stencil(settings),
+        create_right_rectangle_rule_stencil(settings)
+    )
+
+
+def create_side_trapezoidal_rule_stencil(alpha, lf, p, start, end, multiplier, weight):
+    return create_parametrized_stencil(
+        start, end, p,
+        multiplier*(lf / float(p)) ** (1. - alpha) / math.gamma(3. - alpha),
+        weight)
+
+
+def create_left_trapezoidal_rule_stencil(settings):
+    alpha, lf, p = settings
+
+    def weight(number):
+
+        if number == 0:
+            return (p - 1.)**(2 - alpha) + (2. - alpha - p)*p**(1 - alpha)
+        elif number == p:
+            return 1.
+        else:
+            k = -p + number
+            return (-k + 1.)**(2 - alpha) - 2*(-k)**(2 - alpha) + (-k - 1.)**(2 - alpha)
+
+    return create_side_trapezoidal_rule_stencil(
+        alpha, lf, p, -lf, 0., 1., weight
+    )
+
+
+def create_right_trapezoidal_rule_stencil(settings):
+    alpha, lf, p = settings
+
+    def weight(number):
+
+        if number == 0:
+            return 1.
+        elif number == p:
+            return (p - 1.)**(2 - alpha) + (2. - alpha - p)*p**(1 - alpha)
+        else:
+            k = number
+            return (k + 1.)**(2 - alpha) - 2*k**(2 - alpha) + (k - 1.)**(2 - alpha)
+
+    return create_side_trapezoidal_rule_stencil(
+        alpha, lf, p, 0., lf, -1., weight
+    )
+
+
+def create_riesz_trapezoidal_rule_stencil(settings):
+    return create_riesz_stencil(
+        settings,
+        create_left_trapezoidal_rule_stencil(settings),
+        create_right_trapezoidal_rule_stencil(settings)
     )
