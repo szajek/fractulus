@@ -1,5 +1,5 @@
 from fdm.geometry import Point
-from fractulus.equation import Settings, create_left_caputo_stencil
+from fractulus.equation import Settings, create_left_stencil
 import unittest
 import numpy as np
 
@@ -10,7 +10,7 @@ import fdm
 class LeftCaputoStencilTest(unittest.TestCase):
     def test_Expand_NodeZeroAndAlphaAlmostOne_ReturnNodeZeroWeightAlmostOne(self):
 
-        stencil = create_left_caputo_stencil(0.9999, 10., 10)
+        stencil = create_left_stencil('caputo', Settings(0.9999, 10., 10))
 
         self.assertAlmostEqual(
             1.,
@@ -59,7 +59,7 @@ class LeftCaputoForLinearFunctionStudies(unittest.TestCase):
     @staticmethod
     def _create_derivative(alpha, lf, p):
         return fdm.Operator(
-            fr.equation.create_left_caputo_stencil(alpha, lf, p),
+            fr.equation.create_left_stencil('caputo', fr.equation.Settings(alpha, lf, p)),
             fdm.Operator(
                 fdm.Stencil.central(.1)
             )
@@ -86,7 +86,8 @@ class RieszCaputoStudy(unittest.TestCase):
 
     def _create_derivative(self, alpha, lf):
         return fdm.Operator(
-            fr.create_riesz_caputo_stencil(
+            fr.create_riesz_stencil(
+                'caputo',
                 fr.Settings(alpha, lf, lf)
             ),
             fdm.Number(self._function)
