@@ -86,7 +86,7 @@ class RieszCaputoStudy(unittest.TestCase):
 
     def _create_derivative(self, alpha, lf):
         return fdm.Operator(
-            fr.create_riesz_stencil(
+            fr.create_riesz_caputo_stencil(
                 'caputo',
                 fr.Settings(alpha, lf, lf)
             ),

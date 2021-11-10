@@ -2,7 +2,7 @@ import unittest
 
 from fdm import Stencil
 from fdm.geometry import Point
-from fractulus.equation import (Settings, create_left_stencil, create_riesz_stencil)
+from fractulus.equation import (Settings, create_left_stencil, create_riesz_caputo_stencil)
 
 
 class CaputoStencilTest(unittest.TestCase):
@@ -33,7 +33,7 @@ class CaputoStencilTest(unittest.TestCase):
         resolution = 1
         _settings = Settings(alpha, lf, resolution)
 
-        _stencil = create_riesz_stencil('caputo', _settings)
+        _stencil = create_riesz_caputo_stencil('caputo', _settings)
         result = _stencil.expand(Point(0.))
 
         self.assertAlmostEqual(1., result[Point(0)].real, places=5)

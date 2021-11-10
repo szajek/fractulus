@@ -4,24 +4,25 @@ import math
 from fdm.equation import Stencil, Number
 from fdm.geometry import Point
 
-__all__ = 'Settings', 'create_left_stencil', 'create_right_stencil', 'create_riesz_stencil'
+__all__ = 'Settings', 'create_left_stencil', 'create_right_stencil', 'create_riesz_caputo_stencil'
 
 
 Settings = collections.namedtuple('CaputoSettings', ('alpha', 'lf', 'resolution'))
 
 
-def create_riesz_stencil(approximation, settings):
-    return _create_riesz_stencil(
+def create_riesz_caputo_stencil(approximation, settings):
+    return _create_riesz_caputo_stencil(
         settings,
         create_left_stencil(approximation, settings)
     )
 
 
-def _create_riesz_stencil(settings, left):
+def _create_riesz_caputo_stencil(settings, left):
     alpha, lf, resolution = settings
     n = math.floor(alpha) + 1.
-    return Number(1. / 2. * math.gamma(2. - alpha) / math.gamma(2.)) * \
-           (left + Number((-1.) ** n) * _create_stencil_by_symmetry(left))
+    element = Number(1. / 2. * math.gamma(2. - alpha) / math.gamma(2.)) * \
+              (left + Number((-1.) ** n) * _create_stencil_by_symmetry(left))
+    return element.to_stencil(Point(0.))
 
 
 def create_left_stencil(approximation, settings):
